@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  createdAt    DateTime      @default(now())
+  email        String        @unique
+  password     String
+  name         String?
+  role         Role          @default(USER)
+  reservations Reservation[] // Relation with reservations
+
+  @@map("users")
+}
+
+model Movie {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  showtimes   Showtime[] // One-to-many relationship with showtime
+
+  @@map("movies")
+}
+
+model Showtime {
+  id           Int           @id @default(autoincrement())
+  dateTime     DateTime
+  movie        Movie         @relation(fields: [movieId], references: [id])
+  movieId      Int
+  reservations Reservation[]
+}
+
+model Reservation {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  showtime   Showtime @relation(fields: [showtimeId], references: [id])
+  showtimeId Int
+  seatNumber Int // Seat number for reservation
+  createdAt  DateTime @default(now())
+
+  @@map("reservations")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
