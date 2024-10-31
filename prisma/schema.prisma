@@ -25,9 +25,30 @@ model Movie {
   description String
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  showtimes   Showtime[] // One-to-many relationship with showtime
+  showtimes   Showtime[] // Relation with showtimes
 
   @@map("movies")
+}
+
+model Theater {
+  id         Int        @id @default(autoincrement())
+  name       String // E.g., "Theater B1"
+  totalSeats Int // Total number of seats in the theater
+  seats      Seat[] // Relation with seats
+  showtimes  Showtime[] // Relation with showtimes
+
+  @@map("theaters")
+}
+
+model Seat {
+  id           Int           @id @default(autoincrement())
+  theater      Theater       @relation(fields: [theaterId], references: [id])
+  theaterId    Int
+  seatNumber   Int // Unique identifier within the theater, e.g., 1, 2, 3...N
+  reservations Reservation[] // Relation with reservations for tracking seat usage
+
+  @@unique([theaterId, seatNumber]) // Ensures each seat number is unique within a theater
+  @@map("seats")
 }
 
 model Showtime {
@@ -35,7 +56,11 @@ model Showtime {
   dateTime     DateTime
   movie        Movie         @relation(fields: [movieId], references: [id])
   movieId      Int
-  reservations Reservation[]
+  theater      Theater       @relation(fields: [theaterId], references: [id])
+  theaterId    Int
+  reservations Reservation[] // Relation with reservations
+
+  @@map("showtimes")
 }
 
 model Reservation {
@@ -44,9 +69,11 @@ model Reservation {
   userId     Int
   showtime   Showtime @relation(fields: [showtimeId], references: [id])
   showtimeId Int
-  seatNumber Int // Seat number for reservation
+  seat       Seat     @relation(fields: [seatId], references: [id])
+  seatId     Int
   createdAt  DateTime @default(now())
 
+  @@unique([showtimeId, seatId]) // Ensures a seat cannot be reserved twice for the same showtime
   @@map("reservations")
 }
 
