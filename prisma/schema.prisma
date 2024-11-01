@@ -14,7 +14,7 @@ model User {
   password     String
   name         String?
   role         Role          @default(USER)
-  reservations Reservation[] // Relation with reservations
+  reservations Reservation[]
 
   @@map("users")
 }
@@ -25,7 +25,7 @@ model Movie {
   description String
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  showtimes   Showtime[] // Relation with showtimes
+  showtimes   Showtime[]
 
   @@map("movies")
 }
@@ -34,8 +34,8 @@ model Theater {
   id         Int        @id @default(autoincrement())
   name       String // E.g., "Theater B1"
   totalSeats Int // Total number of seats in the theater
-  seats      Seat[] // Relation with seats
-  showtimes  Showtime[] // Relation with showtimes
+  seats      Seat[]
+  showtimes  Showtime[]
 
   @@map("theaters")
 }
