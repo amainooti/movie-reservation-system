@@ -1,11 +1,21 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { CreateUserDto } from './DTO';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { CreateUserDto, LoginUserDto } from './DTO';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
 
   async hashPass(userPass: string): Promise<string> {
     return bcrypt.hash(userPass, 10);
@@ -30,6 +40,7 @@ export class AuthService {
           email: createUserDto.email,
           password: hashedPassword,
           name: createUserDto.name,
+          role: createUserDto.role,
         },
       });
 
@@ -37,6 +48,47 @@ export class AuthService {
       return {
         message: 'Successfully Created',
         newUser: userWithoutPassword,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async signIn(
+    loginUser: LoginUserDto,
+  ): Promise<{ message: string; token: string }> {
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: {
+          email: loginUser.email,
+        },
+      });
+
+      if (!user) throw new NotFoundException('User not found');
+
+      const isPasswordMatch = await bcrypt.compare(
+        loginUser.password,
+        user.password,
+      );
+
+      if (!isPasswordMatch)
+        throw new UnauthorizedException('Invalid credentials');
+
+      const { password, ...userTokenPayload } = user;
+
+      const payload = {
+        sub: userTokenPayload.id,
+        name: userTokenPayload.name,
+        role: userTokenPayload.role,
+      };
+
+      const token = jwt.sign(payload, this.config.get<string>('SECRET'), {
+        expiresIn: '1h',
+      });
+
+      return {
+        message: 'Login Successful',
+        token,
       };
     } catch (error) {
       throw error;
